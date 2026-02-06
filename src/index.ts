@@ -42,12 +42,13 @@ function getCorsHeaders(origin: string, allowedOrigin: string): HeadersInit {
 }
 
 // JSON 응답 헬퍼
-function jsonResponse(data: unknown, status: number, corsHeaders: HeadersInit): Response {
+function jsonResponse(data: unknown, status: number, corsHeaders: HeadersInit, cacheControl?: string): Response {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
       'Content-Type': 'application/json',
       ...corsHeaders,
+      ...(cacheControl ? { 'Cache-Control': cacheControl } : {}),
     },
   });
 }
@@ -112,6 +113,17 @@ export default {
         return jsonResponse({ error: 'Invalid round number' }, 400, corsHeaders);
       }
 
+      // 캐시 확인 (캐시 키는 Origin 무관하게 경로 기준)
+      const cache = caches.default;
+      const cacheKey = new Request(url.toString(), { method: 'GET' });
+      const cached = await cache.match(cacheKey);
+      if (cached) {
+        const response = new Response(cached.body, cached);
+        // 캐시된 응답에 요청별 CORS 헤더 덮어쓰기
+        Object.entries(corsHeaders).forEach(([k, v]) => response.headers.set(k, v));
+        return response;
+      }
+
       try {
         const data = await fetchLottoData(round);
 
@@ -137,7 +149,15 @@ export default {
           firstWinners: item.rnk1WnNope,
         };
 
-        return jsonResponse(result, 200, corsHeaders);
+        // 과거 회차: 7일 캐싱 / latest: 10분 캐싱
+        const maxAge = round ? 604800 : 600;
+        const cacheControl = `public, max-age=${maxAge}`;
+        const response = jsonResponse(result, 200, corsHeaders, cacheControl);
+
+        // 캐시에 저장 (waitUntil 없이 await로 처리)
+        await cache.put(cacheKey, response.clone());
+
+        return response;
       } catch (error) {
         console.error('Error:', error);
         return jsonResponse({ error: 'Failed to fetch data', detail: String(error) }, 500, corsHeaders);
