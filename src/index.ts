@@ -107,10 +107,10 @@ export default {
       let round: number | undefined;
       if (param === 'latest') {
         round = undefined;
-      } else if (!isNaN(Number(param))) {
+      } else if (/^\d+$/.test(param) && Number(param) >= 1 && Number(param) <= 9999) {
         round = Number(param);
       } else {
-        return jsonResponse({ error: 'Invalid round number' }, 400, corsHeaders);
+        return jsonResponse({ error: 'Invalid round number. Must be an integer between 1 and 9999.' }, 400, corsHeaders);
       }
 
       // 캐시 확인 (캐시 키는 Origin 무관하게 경로 기준)
