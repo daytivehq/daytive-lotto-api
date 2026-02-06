@@ -98,54 +98,25 @@ export default {
       return jsonResponse({ error: 'Method not allowed' }, 405, corsHeaders);
     }
 
-    // 라우팅: /lotto?round=회차번호
-    if (url.pathname === '/lotto') {
-      const round = url.searchParams.get('round');
+    // 라우팅: /round/{회차번호 또는 latest}
+    const match = url.pathname.match(/^\/round\/(.+)$/);
+    if (match) {
+      const param = match[1];
 
-      if (!round || isNaN(Number(round))) {
+      let round: number | undefined;
+      if (param === 'latest') {
+        round = undefined;
+      } else if (!isNaN(Number(param))) {
+        round = Number(param);
+      } else {
         return jsonResponse({ error: 'Invalid round number' }, 400, corsHeaders);
       }
 
       try {
-        const data = await fetchLottoData(Number(round));
+        const data = await fetchLottoData(round);
 
         if (!data.data?.list?.length) {
-          return jsonResponse({ error: 'Round not found' }, 404, corsHeaders);
-        }
-
-        const item = data.data.list[0];
-        const result = {
-          round: item.ltEpsd,
-          date: formatDate(item.ltRflYmd),
-          numbers: [
-            item.tm1WnNo,
-            item.tm2WnNo,
-            item.tm3WnNo,
-            item.tm4WnNo,
-            item.tm5WnNo,
-            item.tm6WnNo,
-          ],
-          bonusNumber: item.bnsWnNo,
-          totalSales: item.wholEpsdSumNtslAmt,
-          firstPrize: item.rnk1WnAmt,
-          firstWinners: item.rnk1WnNope,
-        };
-
-        return jsonResponse(result, 200, corsHeaders);
-      } catch (error) {
-        console.error('Error:', error);
-        return jsonResponse({ error: 'Failed to fetch data', detail: String(error) }, 500, corsHeaders);
-      }
-    }
-
-    // 최신 회차 조회: /lotto/latest
-    if (url.pathname === '/lotto/latest') {
-      try {
-        // round 없이 호출하면 최신 회차 반환
-        const data = await fetchLottoData();
-
-        if (!data.data?.list?.length) {
-          return jsonResponse({ error: 'Could not find latest round' }, 404, corsHeaders);
+          return jsonResponse({ error: round ? 'Round not found' : 'Could not find latest round' }, 404, corsHeaders);
         }
 
         const item = data.data.list[0];
@@ -174,6 +145,6 @@ export default {
     }
 
     // 404
-    return jsonResponse({ error: 'Not found', endpoints: ['/lotto?round=회차', '/lotto/latest'] }, 404, corsHeaders);
+    return jsonResponse({ error: 'Not found', endpoints: ['/round/{회차}', '/round/latest'] }, 404, corsHeaders);
   },
 };

@@ -6,20 +6,20 @@
 
 | 경로 | 설명 |
 |------|------|
-| `/lotto?round=회차` | 특정 회차 조회 |
-| `/lotto/latest` | 최신 회차 조회 |
+| `/round/{회차}` | 특정 회차 조회 (예: `/round/1111`) |
+| `/round/latest` | 최신 회차 조회 |
 
 ## 응답 예시
 
 ```json
 {
-  "round": 1100,
-  "date": "2023-12-30",
-  "numbers": [17, 26, 29, 30, 31, 43],
-  "bonusNumber": 12,
-  "totalSales": 116187023000,
-  "firstPrize": 2207575472,
-  "firstWinners": 13
+  "round": 1209,
+  "date": "2026-01-31",
+  "numbers": [2, 17, 20, 35, 37, 39],
+  "bonusNumber": 24,
+  "totalSales": 124040394000,
+  "firstPrize": 1371910466,
+  "firstWinners": 22
 }
 ```
 
@@ -32,6 +32,9 @@ npm run dev
 
 ## 배포
 
+Cloudflare 대시보드에서 GitHub 레포지토리(`main` 브랜치)를 연결하여 배포
+
+수동 배포:
 ```bash
 npm run deploy
 ```
